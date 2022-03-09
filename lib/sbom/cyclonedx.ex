@@ -33,7 +33,14 @@ defmodule SBoM.CycloneDX do
              {:metadata, [],
               [
                 {:timestamp, [], [[DateTime.utc_now() |> DateTime.to_iso8601()]]},
-                {:tools, [], [tool: [name: [["SBoM Mix task for Elixir"]]]]}
+                {:tools, [], [tool: [name: [["SBoM Mix task for Elixir"]]]]},
+                {:component, [type: "library"],
+                 [
+                   {:name, [], [["NO_NAME_PACKAGE"]]},
+                   {:version, [], []},
+                   {:description, [], [["Description goes here"]]},
+                   {:licenses, [], [{:license, [], [{:id, [], [["MIT"]]}]}]}
+                 ]}
               ]},
              {:components, [], Enum.map(components, &component/1)}
            ]}
