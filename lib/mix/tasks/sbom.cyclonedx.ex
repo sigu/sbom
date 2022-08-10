@@ -85,9 +85,7 @@ defmodule Mix.Tasks.Sbom.Cyclonedx do
       shell = Mix.shell()
 
       shell.error(
-        "invalid cyclonedx schema version, available versions are #{
-          schema_versions |> Enum.join(", ")
-        }"
+        "invalid cyclonedx schema version, available versions are #{schema_versions |> Enum.join(", ")}"
       )
 
       Mix.raise("Give correct cyclonedx schema version to continue.")
