@@ -1,28 +1,20 @@
 defmodule Mix.Tasks.Sbom.Phx do
-  @shortdoc "Generate sbom for node packages"
+  @moduledoc "Genrates bom files for phoenix projects"
+  @shortdoc "Generate sbom for phoenix projects"
 
   use Mix.Task
   require Logger
 
-  def run(_args) do
+  @impl Mix.Task
+  def run(args) do
     Sbom.Cli.install()
-    path = Application.get_env(:sbom, :cd)
-    Logger.debug("generating node modules bom")
 
-    res =
-      System.cmd(
-        path <> "/node_modules/@cyclonedx/bom/bin/make-bom.js",
-        ["--output=../bom_phx.xml"],
-        cd: path
-      )
-
-    case res do
-      {_, 0} -> Logger.debug("Successfully generated bom file")
-      _ -> Logger.error("Failed to generate node modules bom file")
+    unless File.exists?("bom.xml") do
+      Mix.Task.run("sbom.cyclonedx", args)
     end
 
-    Logger.debug("Merging the two files")
-    Sbom.Cli.merge("bom_phx.xml", "bom.xml")
-    Sbom.Cli.convert("bom_merged.xml")
+    Sbom.Cli.Phx.bom()
+    |> Sbom.Cli.merge("bom.xml")
+    |> Sbom.Cli.convert()
   end
 end

@@ -1,5 +1,6 @@
 defmodule Sbom.Cli do
   require Logger
+  alias Sbom.Cli.Phx
 
   def install do
     version = Application.get_env(:sbom, :cyclone_cli) || "0.24.0"
@@ -18,21 +19,9 @@ defmodule Sbom.Cli do
         File.chmod(bin_path, 0o755)
     end
 
-    cd = Application.get_env(:sbom, :cd) || Path.expand("../assets", __DIR__)
-    if File.exists?( cd <> "/package.json") do
-      Logger.debug("Found a package.json file")
-      install_npm()
-    end
-  end
-
-  def install_npm do
-    Logger.debug("Installing npm bom generator")
-
-    case System.cmd("npm", ["install", "-D ", "@cyclonedx/bom"],
-           cd: Application.get_env(:sbom, :cd)
-         ) do
-      {_, 0} -> Logger.debug("Successfully installed cyclonedx for npm packages")
-      {error, _} -> Logger.error("There was an error during installation", error: error)
+    if File.exists?(Application.get_env(:sbom, :cd) <> "/package.json") do
+      Logger.debug("Found a package.json file, assuming a node project")
+      Phx.install()
     end
   end
 
@@ -50,14 +39,7 @@ defmodule Sbom.Cli do
   The executable may not be available if it was not yet installed.
   """
   def bin_path do
-    name = "cyclonedx-cli-#{target()}"
-
-    Application.get_env(:tailwind, :path) ||
-      if Code.ensure_loaded?(Mix.Project) do
-        Path.join(Path.dirname(Mix.Project.build_path()), name)
-      else
-        Path.expand("_build/#{name}")
-      end
+    Path.expand("_build/cyclonedx-cli-#{target()}")
   end
 
   # Available targets:
@@ -139,7 +121,20 @@ defmodule Sbom.Cli do
     end
   end
 
+  def merge(:error, file2), do: file2
+
   def merge(file1, file2) do
+    if File.exists?(file1) and File.exists?(file2) do
+      do_merge(file1, file2)
+    else
+      missing_file = if File.exists?(file1), do: file2, else: file1
+      Logger.error("Could not find file " <> missing_file)
+      :error
+    end
+  end
+
+  defp do_merge(file1, file2) do
+    Logger.debug("Merging the two files - #{file1} and #{file2}...")
     input_files = file1 <> " " <> file2
     output_filename = 'bom_merged.xml'
 
@@ -154,13 +149,15 @@ defmodule Sbom.Cli do
         ' --version=' ++ to_charlist(version())
 
     cmd |> :os.cmd() |> Logger.debug()
+    output_filename |> to_string
   end
 
   def convert(
-        input_file \\ "bom.xml",
+        input_file,
         version \\ "1_3",
         output_formats \\ ["xml", "json", "spdxjson"]
-      ) do
+      )
+      when is_binary(input_file) do
     for output <- output_formats do
       {output_file, output_format} =
         case output do
@@ -198,9 +195,11 @@ defmodule Sbom.Cli do
 
   defp output_directory do
     path = Application.get_env(:sbom, :bom_location) || "priv/static/.well-known/sbom"
+
     unless File.exists?(path) do
-      File.mkdir!(path)
+      File.mkdir_p!(path)
     end
+
     path
   end
 end
