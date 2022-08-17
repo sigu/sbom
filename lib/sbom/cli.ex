@@ -1,6 +1,5 @@
 defmodule Sbom.Cli do
   require Logger
-  alias Sbom.Cli.Phx
 
   def install do
     version = Application.get_env(:sbom, :cyclone_cli) || "0.24.0"
@@ -17,11 +16,6 @@ defmodule Sbom.Cli do
         File.mkdir_p!(Path.dirname(bin_path))
         File.write!(bin_path, binary, [:binary])
         File.chmod(bin_path, 0o755)
-    end
-
-    if File.exists?(Application.get_env(:sbom, :cd) <> "/package.json") do
-      Logger.debug("Found a package.json file, assuming a node project")
-      Phx.install()
     end
   end
 
@@ -174,7 +168,21 @@ defmodule Sbom.Cli do
         "--output-version=v" <> version,
         "--output-format=" <> output_format
       ])
+
+      output_directory() <> "/" <> output_file
     end
+    |> print_filenames()
+  end
+
+  defp print_filenames(filenames) do
+    Logger.debug("Created the following files ")
+
+    Enum.with_index(filenames, fn name, index ->
+      """
+      #{index + 1}. #{Path.relative_to(name, File.cwd!())}
+      """
+    end)
+    |> Mix.shell().info()
   end
 
   defp filename do
