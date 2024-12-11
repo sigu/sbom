@@ -1,7 +1,7 @@
 defmodule SBoM.MixProject do
   use Mix.Project
 
-  @version "0.6.2"
+  @version "0.6.3"
 
   def project do
     [
@@ -28,6 +28,7 @@ defmodule SBoM.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:castore, ">= 0.0.0"},
       {:ex_doc, "~> 0.21", only: :dev}
     ]
   end
