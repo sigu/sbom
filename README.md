@@ -32,8 +32,8 @@ By default only the dependencies used in production are included. To include all
 dependencies, including those for the 'dev' and 'test' environments, pass the
 `-d` command line option: `mix sbom.cyclonedx -d`.
 
-*Note that MIX_ENV does not affect which dependencies are included in the
-output; the task should normally be run in the default (dev) environment*
+_Note that MIX_ENV does not affect which dependencies are included in the
+output; the task should normally be run in the default (dev) environment_
 
 For more information on the command line arguments accepted by the Mix task
 run `mix help sbom.cyclonedx`.
@@ -42,7 +42,7 @@ run `mix help sbom.cyclonedx`.
 
 If you are running a phoenix project, you can generate your phoenix dependencies sbom file too by running the command `mix sbom.phx`. You need to add the following to your dev config
 
-``` elixir
+```elixir
 config :sbom,
   cyclone_cli: "0.24.0",
   cyclone_npm: "3.10.4",
@@ -61,7 +61,6 @@ The [@cyclonedx/bom](https://www.npmjs.com/package/@cyclonedx/bom) tool on NPM
 can not only generate an SBoM for your JavaScript assets, but it can also merge
 in the output of the 'sbom.cyclonedx' Mix task and other scanners, through the
 '-a' option, producing a single CycloneDX XML file.
-
 
 ## To do
 

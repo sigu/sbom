@@ -1,7 +1,7 @@
 defmodule SBoM.MixProject do
   use Mix.Project
 
-  @version "0.6.0"
+  @version "0.6.3"
 
   def project do
     [
@@ -21,7 +21,7 @@ defmodule SBoM.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:hex]
+      extra_applications: [:hex, :xmerl]
     ]
   end
 
