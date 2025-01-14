@@ -74,6 +74,7 @@ defmodule Sbom.Cli do
   defp fetch_body!(url) do
     url = String.to_charlist(url)
     Logger.debug("Downloading cyclonedx cli from #{url}")
+    Logger.debug("Are we here????? #{url}")
 
     {:ok, _} = Application.ensure_all_started(:inets)
     {:ok, _} = Application.ensure_all_started(:ssl)
@@ -130,17 +131,17 @@ defmodule Sbom.Cli do
   defp do_merge(file1, file2) do
     Logger.debug("Merging the two files - #{file1} and #{file2}...")
     input_files = file1 <> " " <> file2
-    output_filename = 'bom_merged.xml'
+    output_filename = ~c"bom_merged.xml"
 
     cmd =
       String.to_charlist(bin_path()) ++
-        ' merge --input-files=' ++
+        ~c" merge --input-files=" ++
         String.to_charlist(input_files) ++
-        ' --output-file=' ++
+        ~c" --output-file=" ++
         output_filename ++
-        ' --name=' ++
+        ~c" --name=" ++
         to_charlist(name()) ++
-        ' --version=' ++ to_charlist(version())
+        ~c" --version=" ++ to_charlist(version())
 
     cmd |> :os.cmd() |> Logger.debug()
     output_filename |> to_string
