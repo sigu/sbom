@@ -71,49 +71,107 @@ defmodule Sbom.Cli do
     end
   end
 
-  defp fetch_body!(url) do
+  defp fetch_body!(url, retry \\ true) do
+    scheme = URI.parse(url).scheme
     url = String.to_charlist(url)
-    Logger.debug("Downloading cyclonedx cli from #{url}")
-    Logger.debug("Are we here????? #{url}")
+    Logger.debug("Downloading tailwind from #{url}")
 
     {:ok, _} = Application.ensure_all_started(:inets)
     {:ok, _} = Application.ensure_all_started(:ssl)
 
-    if proxy = System.get_env("HTTP_PROXY") || System.get_env("http_proxy") do
-      Logger.debug("Using HTTP_PROXY: #{proxy}")
+    if proxy = proxy_for_scheme(scheme) do
       %{host: host, port: port} = URI.parse(proxy)
-      :httpc.set_options([{:proxy, {{String.to_charlist(host), port}, []}}])
-    end
-
-    if proxy = System.get_env("HTTPS_PROXY") || System.get_env("https_proxy") do
-      Logger.debug("Using HTTPS_PROXY: #{proxy}")
-      %{host: host, port: port} = URI.parse(proxy)
-      :httpc.set_options([{:https_proxy, {{String.to_charlist(host), port}, []}}])
+      Logger.debug("Using #{String.upcase(scheme)}_PROXY: #{proxy}")
+      set_option = if "https" == scheme, do: :https_proxy, else: :proxy
+      :httpc.set_options([{set_option, {{String.to_charlist(host), port}, []}}])
     end
 
     # https://erlef.github.io/security-wg/secure_coding_and_deployment_hardening/inets
-    cacertfile = CAStore.file_path() |> String.to_charlist()
+    cacertfile = cacertfile() |> String.to_charlist()
 
-    http_options = [
-      ssl: [
-        verify: :verify_peer,
-        cacertfile: cacertfile,
-        depth: 2,
-        customize_hostname_check: [
-          match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+    http_options =
+      [
+        ssl: [
+          verify: :verify_peer,
+          cacertfile: cacertfile,
+          depth: 2,
+          customize_hostname_check: [
+            match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+          ],
+          versions: protocol_versions()
         ]
       ]
-    ]
+      |> maybe_add_proxy_auth(scheme)
 
     options = [body_format: :binary]
 
-    case :httpc.request(:get, {url, []}, http_options, options) do
-      {:ok, {{_, 200, _}, _headers, body}} ->
+    case {retry, :httpc.request(:get, {url, []}, http_options, options)} do
+      {_, {:ok, {{_, 200, _}, _headers, body}}} ->
         body
 
+      {true, {:error, {:failed_connect, [{:to_address, _}, {inet, _, reason}]}}}
+      when inet in [:inet, :inet6] and
+             reason in [:ehostunreach, :enetunreach, :eprotonosupport, :nxdomain] ->
+        :httpc.set_options(ipfamily: fallback(inet))
+        fetch_body!(url, false)
+
       other ->
-        raise "couldn't fetch #{url}: #{inspect(other)}"
+        raise """
+        Couldn't fetch #{url}: #{inspect(other)}
+
+        This typically means we cannot reach the source or you are behind a proxy.
+        You can try again later and, if that does not work, you might:
+
+          1. If behind a proxy, ensure your proxy is configured and that
+             your certificates are set via the cacerts_path configuration
+
+          2. Manually download the executable from the URL above and
+             place it inside "_build/tailwind-#{target()}"
+
+          3. Install and use Tailwind from npmJS. See our module documentation
+             to learn more: https://hexdocs.pm/tailwind
+        """
     end
+  end
+
+  defp fallback(:inet), do: :inet6
+  defp fallback(:inet6), do: :inet
+
+  defp proxy_for_scheme("http") do
+    System.get_env("HTTP_PROXY") || System.get_env("http_proxy")
+  end
+
+  defp proxy_for_scheme("https") do
+    System.get_env("HTTPS_PROXY") || System.get_env("https_proxy")
+  end
+
+  defp maybe_add_proxy_auth(http_options, scheme) do
+    case proxy_auth(scheme) do
+      nil -> http_options
+      auth -> [{:proxy_auth, auth} | http_options]
+    end
+  end
+
+  defp proxy_auth(scheme) do
+    with proxy when is_binary(proxy) <- proxy_for_scheme(scheme),
+         %{userinfo: userinfo} when is_binary(userinfo) <- URI.parse(proxy),
+         [username, password] <- String.split(userinfo, ":") do
+      {String.to_charlist(username), String.to_charlist(password)}
+    else
+      _ -> nil
+    end
+  end
+
+  defp cacertfile() do
+    Application.get_env(:tailwind, :cacerts_path) || CAStore.file_path()
+  end
+
+  defp protocol_versions do
+    if otp_version() < 25, do: [:"tlsv1.2"], else: [:"tlsv1.2", :"tlsv1.3"]
+  end
+
+  defp otp_version do
+    :erlang.system_info(:otp_release) |> List.to_integer()
   end
 
   def merge(:error, file2), do: file2
