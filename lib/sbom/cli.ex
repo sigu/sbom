@@ -74,7 +74,7 @@ defmodule Sbom.Cli do
   defp fetch_body!(url, retry \\ true) do
     scheme = URI.parse(url).scheme
     url = String.to_charlist(url)
-    Logger.debug("Downloading tailwind from #{url}")
+    Logger.debug("Downloading sbom from #{url}")
 
     {:ok, _} = Application.ensure_all_started(:inets)
     {:ok, _} = Application.ensure_all_started(:ssl)
@@ -87,7 +87,7 @@ defmodule Sbom.Cli do
     end
 
     # https://erlef.github.io/security-wg/secure_coding_and_deployment_hardening/inets
-    cacertfile = cacertfile() |> String.to_charlist()
+    cacertfile = String.to_charlist(CAStore.file_path())
 
     http_options =
       [
@@ -118,18 +118,6 @@ defmodule Sbom.Cli do
       other ->
         raise """
         Couldn't fetch #{url}: #{inspect(other)}
-
-        This typically means we cannot reach the source or you are behind a proxy.
-        You can try again later and, if that does not work, you might:
-
-          1. If behind a proxy, ensure your proxy is configured and that
-             your certificates are set via the cacerts_path configuration
-
-          2. Manually download the executable from the URL above and
-             place it inside "_build/tailwind-#{target()}"
-
-          3. Install and use Tailwind from npmJS. See our module documentation
-             to learn more: https://hexdocs.pm/tailwind
         """
     end
   end
@@ -160,10 +148,6 @@ defmodule Sbom.Cli do
     else
       _ -> nil
     end
-  end
-
-  defp cacertfile() do
-    Application.get_env(:tailwind, :cacerts_path) || CAStore.file_path()
   end
 
   defp protocol_versions do

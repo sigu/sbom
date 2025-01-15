@@ -21,16 +21,8 @@ defmodule SBoM.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: extra_applications(Mix.env())
+      extra_applications: [:hex, :xmerl, inets: :optional, ssl: :optional]
     ]
-  end
-
-  defp extra_applications(:dev) do
-    extra_applications(:prod) ++ [:inets, :ssl]
-  end
-
-  defp extra_applications(_env) do
-    [:hex, :xmerl]
   end
 
   # Run "mix help deps" to learn about dependencies.
