@@ -14,6 +14,8 @@ defmodule SBoM.CycloneDX do
   """
 
   def bom(components, options \\ []) do
+    app_config = Mix.Project.config()
+
     bom =
       case options[:schema] do
         "1.1" ->
@@ -33,12 +35,18 @@ defmodule SBoM.CycloneDX do
              {:metadata, [],
               [
                 {:timestamp, [], [[DateTime.utc_now() |> DateTime.to_iso8601()]]},
-                {:tools, [], [tool: [name: [["SBoM Mix task for Elixir"]]]]},
+                {:tools, [],
+                 [
+                   tool: [
+                     {:name, [], [["SBoM Mix task for Elixir"]]},
+                     {:vendor, [], [["Voltone (https://github.com/voltone/sbom)"]]}
+                   ]
+                 ]},
                 {:component, [type: "library"],
                  [
-                   {:name, [], [["NO_NAME_PACKAGE"]]},
-                   {:version, [], []},
-                   {:description, [], [["Description goes here"]]},
+                   {:name, [], [[to_string(app_config[:app])]]},
+                   {:version, [], [[to_string(app_config[:version])]]},
+                   {:description, [], [[to_string(app_config[:description])]]},
                    {:licenses, [], [{:license, [], [{:id, [], [["MIT"]]}]}]}
                  ]}
               ]},
