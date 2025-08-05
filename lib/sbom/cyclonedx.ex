@@ -12,6 +12,9 @@ defmodule SBoM.CycloneDX do
 
   If no serial number is specified a random UUID is generated.
   """
+  @version Mix.Project.config()[:version]
+  @description Mix.Project.config()[:description]
+  @license Mix.Project.config()[:package][:licenses]
 
   def bom(components, options \\ []) do
     app_config = Mix.Project.config()
@@ -39,7 +42,10 @@ defmodule SBoM.CycloneDX do
                  [
                    tool: [
                      {:name, [], [["SBoM Mix task for Elixir"]]},
-                     {:vendor, [], [["Voltone (https://github.com/voltone/sbom)"]]}
+                     {:vendor, [], [["Voltone (https://github.com/voltone/sbom)"]]},
+                     {:description, [], [[@description]]},
+                     {:version, [], [[@version]]},
+                     {:licenses, [], [{:license, [], [{:id, [], [@license]}]}]}
                    ]
                  ]},
                 {:component, [type: "library"],
