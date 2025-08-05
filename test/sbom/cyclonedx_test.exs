@@ -4,24 +4,31 @@ defmodule SBoM.CycloneDXTest do
 
   doctest SBoM.CycloneDX
 
+  @opts [
+    schema: "1.6",
+    format: "xml"
+  ]
+
+  @sample_component %{
+    type: "library",
+    name: "name",
+    version: "0.0.1",
+    purl: "pkg:hex/name@0.0.1",
+    licenses: ["Apache-2.0"]
+  }
+
   describe "bom" do
     test "serial number UUID generation" do
-      assert [] |> bom() |> to_string() =~
-               ~r(serialNumber="[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+      assert [@sample_component] |> bom(@opts) |> to_string() =~
+               ~r(serialNumber="urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     end
 
     test "component without license" do
       xml =
         [
-          %{
-            type: "library",
-            name: "name",
-            version: "0.0.1",
-            purl: "pkg:hex/name@0.0.1",
-            licenses: []
-          }
+          Map.put(@sample_component, :licenses, [])
         ]
-        |> bom()
+        |> bom(@opts)
         |> to_string()
 
       assert xml =~ ~s(<component type="library">)
@@ -34,15 +41,9 @@ defmodule SBoM.CycloneDXTest do
     test "component with SPDX license" do
       xml =
         [
-          %{
-            type: "library",
-            name: "name",
-            version: "0.0.1",
-            purl: "pkg:hex/name@0.0.1",
-            licenses: ["Apache-2.0"]
-          }
+          @sample_component
         ]
-        |> bom()
+        |> bom(@opts)
         |> to_string()
 
       assert xml =~ ~s(<licenses><license><id>Apache-2.0</id></license></licenses>)
@@ -51,15 +52,9 @@ defmodule SBoM.CycloneDXTest do
     test "component with other license" do
       xml =
         [
-          %{
-            type: "library",
-            name: "name",
-            version: "0.0.1",
-            purl: "pkg:hex/name@0.0.1",
-            licenses: ["Some other license"]
-          }
+          Map.put(@sample_component, :licenses, ["Some other license"])
         ]
-        |> bom()
+        |> bom(@opts)
         |> to_string()
 
       assert xml =~ ~s(<licenses><license><name>Some other license</name></license></licenses>)
@@ -68,18 +63,11 @@ defmodule SBoM.CycloneDXTest do
     test "component with hash" do
       xml =
         [
-          %{
-            type: "library",
-            name: "name",
-            version: "0.0.1",
-            purl: "pkg:hex/name@0.0.1",
-            licenses: [],
-            hashes: %{
-              "SHA-256" => "fdf843bca858203ae1de16da2ee206f53416bbda5dc8c9e78f43243de4bc3afe"
-            }
-          }
+          Map.put(@sample_component, :hashes, %{
+            "SHA-256" => "fdf843bca858203ae1de16da2ee206f53416bbda5dc8c9e78f43243de4bc3afe"
+          })
         ]
-        |> bom()
+        |> bom(@opts)
         |> to_string()
 
       assert xml =~
