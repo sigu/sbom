@@ -191,7 +191,7 @@ defmodule Sbom.Cli do
 
   def convert(
         input_file,
-        version \\ "1_3",
+        version \\ "1_6",
         output_formats \\ ["xml", "json", "spdxjson"]
       )
       when is_binary(input_file) do
