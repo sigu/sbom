@@ -21,13 +21,14 @@ defmodule SBoM.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:hex, :xmerl]
+      extra_applications: [:hex, :xmerl, inets: :optional, ssl: :optional]
     ]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:castore, ">= 0.0.0"},
       {:ex_doc, "~> 0.21", only: :dev}
     ]
   end
