@@ -2,7 +2,7 @@ defmodule Sbom.Cli do
   require Logger
 
   def install do
-    version = Application.get_env(:sbom, :cyclone_cli) || "0.24.0"
+    version = Application.get_env(:sbom, :cyclone_cli) || "0.30.0"
 
     case bin_version() do
       {:ok, ^version} ->
